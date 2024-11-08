@@ -41,3 +41,4 @@ class ICRServer:
         self.adress = config['host']
         self.interval = config['interval']
         self.cur = cur
+        self.limit = config['limit']

@@ -3,3 +3,4 @@ port: 342000 # Port, na jakim serwer ma działać. default 342000
 join: open # Możliwe opcje: open, password, request, locked; default open
 interval: 30 # Co ile sekund powinien być odświerzony status wszystkich użytkowników, default 30
 msgpass: 15 # Ile wiadomości powinno być przesłanych do każdego użytkownika przy zalogowaniu, default 15
+limit: 6 # Limit osób możliwych do obsługi w tym samym czasie. default 6
