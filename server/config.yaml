@@ -1,0 +1,5 @@
+host: 127.0.0.1 # Adress, na którym ma powstać serwer. default localhost
+port: 342000 # Port, na jakim serwer ma działać. default 342000
+join: open # Możliwe opcje: open, password, request, locked; default open
+interval: 30 # Co ile sekund powinien być odświerzony status wszystkich użytkowników, default 30
+msgpass: 15 # Ile wiadomości powinno być przesłanych do każdego użytkownika przy zalogowaniu, default 15
