@@ -1,26 +1,21 @@
 import asyncio
-import yaml
-import socket
-import sqlite3
 
-with open('config.yaml','r') as file: # Wczytujemy plik konfiguracyjny
-    config = yaml.safe_load(file)
-print("Wczytano plik konfiguracyjny")
+host = '127.0.0.1'
+port = 45255
 
-con = sqlite3.connect('user.db') # Łączymy się z bazą danych
-cur = con.cursor()
-print("Połączono z bazą danych")
+async def run_client() -> None:
+    reader, writer = await asyncio.open_connection(host, port)
+    await writer.write(b'hello world')
+    await writer.drain()
+    
+    while True:
+        data = await reader.read(1024)
+        
+        if not data:
+            raise Exception('Connection closed')
+        
+        print(data.decode('utf-8'))
 
-# Tworzymy bazę danych do przechowywania znanych loginów w serwerach
-cur.execute('''CREATE TABLE IF NOT EXISTS known
-    (id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
-    password TEXT NOT NULL,
-    serverip TEXT NOT NULL)''')
-
-con.commit()
-
-class User{
-    def __init__(self,config):
-        # WSTAW TUTAJ USTAWIENIA GRAFICZNE JAK CHCESZ ITP
-}
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_client())
