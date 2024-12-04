@@ -1,79 +1,75 @@
 import asyncio
-import bcrypt
-import yaml
-import sqlite3
 import customlib.tcolor as tcolor
 tc = tcolor.color
 
-with open('config.yaml','r') as file: # Wczytujemy plik konfiguracyjny
-    config = yaml.safe_load(file)
-print(tc.OKCYAN + "Wczytano plik konfiguracyjny" + tc.END)
+# CONFIG
+host = '127.0.0.1'
+port = 45255
+format = 'utf-8'
 
-con = sqlite3.connect('serwer.db') # Łączymy się z bazą danych
-cur = con.cursor()
-print(tc.OKCYAN + "Połączono z bazą danych" + tc.END)
+# Zmienne do przechowywania danych
+usernames = []
+clients = []
 
-# Tworzymy tabele dla użytkowników i wiadomości JEŻELI nie istnieje
-cur.execute('''CREATE TABLE IF NOT EXISTS users
-             (id INTEGER PRIMARY KEY AUTOINCREMENT,
-              username TEXT NOT NULL,
-              password TEXT NOT NULL,
-              privilege INT NOT NULL,
-              currentuser string DEFAULT 'None',
-              last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+async def new_user(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> str:
+    servermessage = "Podaj nazwę użytkownika: "
+    writer.write(servermessage.encode(format))
+    await writer.drain()
 
-cur.execute('''CREATE TABLE IF NOT EXISTS messages
-             (id INTEGER PRIMARY KEY AUTOINCREMENT,
-              user_id INTEGER,
-              message TEXT,
-              timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              FOREIGN KEY (user_id) REFERENCES users(id))''')
-
-cur.execute('''CREATE TABLE IF NOT EXISTS kicks
-             (id INTEGER PRIMARY KEY AUTOINCREMENT,
-              user_id INTEGER,
-              reason TEXT,
-              timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              FOREIGN KEY (user_id) REFERENCES users(id))''')
-
-cur.execute('''CREATE TABLE IF NOT EXISTS bans
-             (id INTEGER PRIMARY KEY AUTOINCREMENT,
-              user_id INTEGER,
-              reason TEXT,
-              timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              FOREIGN KEY (user_id) REFERENCES users(id))''')
-
-con.commit()
-
-# Odczytujemy dane z configu
-host = config['host']
-port = config['port']
-limit = config['limit']
-name = config['name']
-format = "utf-8"
-
+    data = await reader.read(1024)
+    username = data.decode(format).strip()
+    if username in usernames:
+        writer.write("Nazwa użytkownika zajęta. Spróbuj ponownie.".encode(format))
+        await writer.drain()
+        return None
+    else:
+        usernames.append(username)
+        return username
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-    data = None
+    try:
+        username = await new_user(reader, writer)
+        if not username:
+            writer.close()
+            await writer.wait_closed()
+            return
 
-    while data != b'exit':
-        data = await reader.read(1024)
-        msg = data.decode(format)
-        addr, port = writer.get_extra_info('peername')
-        print(f"Received message from {addr}:{port}: {msg!r}")
+        welcome_message = f"Użytkownik {username} dołączył do czatu!\n"
+        print(welcome_message.strip())
+        for client in clients:
+            client['writer'].write(welcome_message.encode(format))
+            await client['writer'].drain()
 
-        writer.write(data)
-        await writer.drain()
+        clients.append({'reader': reader, 'writer': writer, 'username': username})
 
-    writer.close()
-    await writer.wait_closed()
+        while True:
+            data = await reader.read(1024)
+            if not data:
+                break
+            msg = f"{username}: {data.decode(format)}"
+            print(msg.strip())
+            for client in clients:
+                if client['writer'] != writer:
+                    client['writer'].write(msg.encode(format))
+                    await client['writer'].drain()
+
+    except Exception as e:
+        print(f"{tc.WARNING} Błąd: {e} {tc.END}")
+    finally:
+        if username in usernames:
+            usernames.remove(username)
+        clients.remove({'reader': reader, 'writer': writer, 'username': username})
+        writer.close()
+        await writer.wait_closed()
+        print(f"{tc.WARNING} Użytkownik {username} opuścił czat {tc.END}")
+
 
 async def run_server() -> None:
     server = await asyncio.start_server(handle_client, host, port)
     async with server:
         await server.serve_forever()
-        
-        
+
+
 if __name__ == '__main__':
     loop = asyncio.new_event_loop()
     loop.run_until_complete(run_server())
