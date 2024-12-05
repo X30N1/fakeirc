@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 host = '127.0.0.1'
 port = 45255
@@ -6,18 +7,36 @@ port = 45255
 # Funkcja do wysyłania wiadomości
 async def write_message(writer) -> None:
     while True:
-        message = input('>> ')  # Czeka na wiadomość od użytkownika
-        writer.write(message.encode('utf-8'))  # Wysyła wiadomość
-        await writer.drain()  # Czeka na potwierdzenie, że wiadomość została wysłana
-
+         try:
+             sys.stdout.write("\033[2K")
+             sys.stdout.write("\033[1000B")
+             sys.stdout.flush()
+             
+             try:
+                message = await asyncio.to_thread(input,">> ")
+             except asyncio.CancelledError:
+                 break
+             
+             if message.lower() == "/exit":
+                 print("Rozłączanie...")
+                 break
+             writer.write(message.encode('utf-8'))
+             await writer.drain()
+         except Exception as e:
+             print(e)
+             break
+         
 # Funkcja do odbierania wiadomości od serwera
 async def read_message(reader) -> None:
     while True:
-        data = await reader.read(1024)
-        if not data:  # Jeśli brak danych (połączenie zostało zamknięte)
-            print("Rozłączono z serwerem.")
+        try:
+            message = await reader.read(1024)
+            if message:
+                decoded_message = message.decode('utf-8')
+                print(decoded_message)
+        except Exception as e:
+            print(e)
             break
-        print(data.decode('utf-8'))  # Drukuje wiadomość z serwera
 
 # Główna funkcja klienta
 async def run_client() -> None:
@@ -44,8 +63,14 @@ async def run_client() -> None:
         return
 
     # Uruchamiamy dwa zadania asynchroniczne: jedno do pisania, drugie do odbierania wiadomości
-    asyncio.create_task(write_message(writer))
-    await read_message(reader)  # Czeka na wiadomości z serwera i je wyświetla
+    recievetask = asyncio.create_task(read_message(reader))
+    await write_message(writer)
+
+    recievetask.cancel()
+
+    # Zamykamy połączenie
+    writer.close()
+    await writer.wait_closed()
 
 # Uruchomienie klienta
 if __name__ == '__main__':

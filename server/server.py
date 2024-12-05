@@ -23,8 +23,19 @@ async def new_user(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -
         await writer.drain()
         return None
     else:
+        writer.write("Połączono pomyślnie".encode(format))
+        await writer.drain()
         usernames.append(username)
         return username
+
+async def broadcast(message: str, writer: asyncio.StreamWriter) -> None:
+    try:
+        for client in clients:
+            if client['writer'] != writer:
+                client['writer'].write(message.encode(format))
+                await client['writer'].drain()
+    except Exception as e:
+        print(f"{tc.WARNING} Błąd: {e} {tc.END}")
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     try:
@@ -34,7 +45,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             await writer.wait_closed()
             return
 
-        welcome_message = f"Użytkownik {username} dołączył do czatu!\n"
+        welcome_message = f"{tc.WARNING}Użytkownik {username} dołączył do czatu!{tc.END}\n"
         print(welcome_message.strip())
         for client in clients:
             client['writer'].write(welcome_message.encode(format))
@@ -48,10 +59,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 break
             msg = f"{username}: {data.decode(format)}"
             print(msg.strip())
-            for client in clients:
-                if client['writer'] != writer:
-                    client['writer'].write(msg.encode(format))
-                    await client['writer'].drain()
+            await broadcast(msg, writer)
 
     except Exception as e:
         print(f"{tc.WARNING} Błąd: {e} {tc.END}")
@@ -61,11 +69,13 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         clients.remove({'reader': reader, 'writer': writer, 'username': username})
         writer.close()
         await writer.wait_closed()
-        print(f"{tc.WARNING} Użytkownik {username} opuścił czat {tc.END}")
+        print(f"{tc.WARNING}Użytkownik {username} opuścił czat {tc.END}")
+        await broadcast(f"{tc.WARNING}{username} opućł czat{tc.END}", writer)
 
 
 async def run_server() -> None:
     server = await asyncio.start_server(handle_client, host, port)
+    print(f"{tc.OKGREEN}Serwer działa na porcie {port}{tc.END}")
     async with server:
         await server.serve_forever()
 
