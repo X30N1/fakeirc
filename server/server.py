@@ -1,15 +1,30 @@
+import os
 import asyncio
 import customlib.tcolor as tcolor
 tc = tcolor.color
 
 # CONFIG
-host = '127.0.0.1'
+host = ""
 port = 45255
 format = 'utf-8'
 
 # Zmienne do przechowywania danych
 usernames = []
 clients = []
+
+# Skrypt do automatycznego odczytywania IP serwera z ifconfig. Jeżeli z jakiegokolwiek
+# powodu hostujesz JAKIKOLWIEK serwer na windowsie, współczuję. (+ mam na to kompletnie wywalone)
+async def setip() -> str:
+    # Priorytet stawiamy na połączenie przewodowe, obviously
+    ipv4 = os.popen('ip addr show eth0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
+    # Jeżeli nie istnieje eth0
+    if not ipv4:
+        ipv4 = os.popen('ip addr show wlan0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
+    # Jak już kompletnie nie znajdzie ani eth0 ani wlan0
+    if not ipv4:
+        ipv4 = input(f"{tc.BOLD}Podaj IP serwera:{tc.END} ")
+
+    return ipv4
 
 async def new_user(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> str:
     servermessage = "Podaj nazwę użytkownika: "
@@ -74,8 +89,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
 
 async def run_server() -> None:
+    host = await setip()
     server = await asyncio.start_server(handle_client, host, port)
-    print(f"{tc.OKGREEN}Serwer działa na porcie {port}{tc.END}")
+    print(f"{tc.OKGREEN}Serwer działa na adresie {host} a porcie {port}{tc.END}")
     async with server:
         await server.serve_forever()
 
