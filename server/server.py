@@ -1,4 +1,4 @@
-import os
+import socket
 import asyncio
 import customlib.tcolor as tcolor
 tc = tcolor.color
@@ -12,19 +12,36 @@ format = 'utf-8'
 usernames = []
 clients = []
 
-# Skrypt do automatycznego odczytywania IP serwera z ifconfig. Jeżeli z jakiegokolwiek
-# powodu hostujesz JAKIKOLWIEK serwer na windowsie, współczuję. (+ mam na to kompletnie wywalone)
-async def setip() -> str:
-    # Priorytet stawiamy na połączenie przewodowe, obviously
-    ipv4 = os.popen('ip addr show eth0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
-    # Jeżeli nie istnieje eth0
-    if not ipv4:
-        ipv4 = os.popen('ip addr show wlan0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
-    # Jak już kompletnie nie znajdzie ani eth0 ani wlan0
-    if not ipv4:
-        ipv4 = input(f"{tc.BOLD}Podaj IP serwera:{tc.END} ")
+async def login(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> bool:
+    """Promptuje użytkownika do zalogowania, po czym sprawdza wprowadzone dane z bazą kont
+    
+    W razie pomyślnego zalogowania zwraca True, w przeciwieństwie False"""
 
-    return ipv4
+    writer.write("Podaj nazwę użytkownika: ".encode(format))
+    await writer.drain()
+
+    data = await reader.read(1024)
+    username = data.decode(format).strip()
+    
+    # Moduł sprawdzania nazwy użytkownika
+    while len(username) == 0 or len(username) > 30:
+        writer.write("Nazwa użytkownika nie może być pusta lub przekroczyć 30 znaków. Spróbuj ponownie.".encode(format))
+        await writer.drain()
+        data = await reader.read(1024)
+        username = data.decode(format).strip()
+
+    if username in usernames:
+        writer.write("Ktoś już jest")
+     
+
+
+async def register(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> bool:
+    """Promptuje użytkownika do podania danych w celu rejestracji.
+    
+    Jeżeli dane zostały poprawnie wprowadzone i użytkownik jest zarejestrowany zwraca True, w przeciwieństwie False"""
+
+    #TODO: Ta funkcja
+
 
 async def new_user(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> str:
     servermessage = "Podaj nazwę użytkownika: "
@@ -88,14 +105,15 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         await broadcast(f"{tc.WARNING}{username} opućł czat{tc.END}", writer)
 
 
-async def run_server() -> None:
-    host = await setip()
-    server = await asyncio.start_server(handle_client, host, port)
+async def run_server(launch_function) -> None:
+    """Zdobywa IP serwera i uruchamia proces rozruchowy launch_function()"""
+
+    host = socket.gethostbyname(socket.gethostname())
+    server = await asyncio.start_server(launch_function, host, port)
     print(f"{tc.OKGREEN}Serwer działa na adresie {host} a porcie {port}{tc.END}")
     async with server:
         await server.serve_forever()
 
 
 if __name__ == '__main__':
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(run_server())
+    asyncio.run(run_server(handle_client))
