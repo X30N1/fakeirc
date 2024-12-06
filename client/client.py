@@ -1,17 +1,12 @@
 import asyncio
-import sys
 
-host = '127.0.0.1'
+host = ""
 port = 45255
 
 # Funkcja do wysyłania wiadomości
 async def write_message(writer) -> None:
     while True:
-         try:
-             sys.stdout.write("\033[2K")
-             sys.stdout.write("\033[1000B")
-             sys.stdout.flush()
-             
+         try:         
              try:
                 message = await asyncio.to_thread(input,">> ")
              except asyncio.CancelledError:
@@ -40,7 +35,12 @@ async def read_message(reader) -> None:
 
 # Główna funkcja klienta
 async def run_client() -> None:
-    reader, writer = await asyncio.open_connection(host, port)  # Łączy się z serwerem
+    host = input("Podaj adress serwera: ")
+    try:
+        reader, writer = await asyncio.open_connection(host, port, limit = 5)  # Łączy się z serwerem
+    except Exception:
+        print("Nie udało się połączyć z serwerem. Spróbuj ponownie")
+        return
 
     # Odbierz wiadomość od serwera (np. "Podaj nazwę użytkownika")
     server_message = await reader.read(1024)

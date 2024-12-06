@@ -16,10 +16,10 @@ clients = []
 # powodu hostujesz JAKIKOLWIEK serwer na windowsie, współczuję. (+ mam na to kompletnie wywalone)
 async def setip() -> str:
     # Priorytet stawiamy na połączenie przewodowe, obviously
-    ipv4 = os.popen('ip addr show eth0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
+    ipv4 = os.popen('ip addr show eth0 | grep "\<inet\>" | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
     # Jeżeli nie istnieje eth0
     if not ipv4:
-        ipv4 = os.popen('ip addr show wlan0 | grep "\<inet\> | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
+        ipv4 = os.popen('ip addr show wlan0 | grep "\<inet\>" | awk \'{ print $2 }\' | awk -F "/" \'{ print $1 }\'').read().strip()
     # Jak już kompletnie nie znajdzie ani eth0 ani wlan0
     if not ipv4:
         ipv4 = input(f"{tc.BOLD}Podaj IP serwera:{tc.END} ")
