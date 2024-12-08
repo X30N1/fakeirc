@@ -40,7 +40,6 @@ async def register(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -
     
     Jeżeli dane zostały poprawnie wprowadzone i użytkownik jest zarejestrowany zwraca True, w przeciwieństwie False"""
 
-    #TODO: Ta funkcja
 
 
 async def new_user(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> str:

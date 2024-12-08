@@ -8,3 +8,6 @@ Do zrobienia:
 [ ] Bardziej przyjazne zamykanie serwera by nie softlockowało klientów XDD
 [ ] Zapisywanie wiadomości do pliku i wysyłanie pewnej części z nich dla każdego klienta
 
+## Resources
+[Diagram schematic](https://dbdiagram.io/d/675374d1e9daa85acaf0f646)
+
