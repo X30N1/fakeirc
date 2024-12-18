@@ -87,3 +87,22 @@ async def post(cursor: sqlite3.Cursor, query: str) -> None:
 
     cursor.execute(query)
     cursor.connection.commit()
+
+async def hash_passwd(password: str) -> str:
+    """Returns a hashed password using a random salt"""
+    return bcrypt.hashpw(password, bcrypt.gensalt())
+
+async def compare_passwd(cursor: sqlite3.Cursor, username: str, password: str) -> dict:
+    """Checks the inputted password with a hashed password queried from the database
+
+    {"password check":"success"} if comparison is succesfull
+    {"password check":"failure"} if comparison is not succesfull
+    """
+    dbpwd = cursor.fetchone(cursor.execute(f"SELECT * FROM users WHERE username = {username}"))
+    
+    if bcrypt.checkpw(password, dbpwd):
+        return {"password check":"success"}
+    else:
+        return {"password check":"failure"}
+
+
