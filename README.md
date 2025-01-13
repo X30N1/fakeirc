@@ -1,13 +1,12 @@
-# fakeirc
-Yet another clone of IRC
+# FakeIRC, the IRC clone that can (or not)
 
-Do zrobienia:
-[ ] Strzałki nie są cały czas na samym dole, wiadomości innych osób to psuje
-[ ] Zapisywanie wiadomości do pliku
-[ ] Wczytywanie wiadomości z pliku i wysyłanie nowym klientom
-[ ] Bardziej przyjazne zamykanie serwera by nie softlockowało klientów XDD
-[ ] Zapisywanie wiadomości do pliku i wysyłanie pewnej części z nich dla każdego klienta
+Functionality:
 
-## Resources
-[Diagram schematic](https://dbdiagram.io/d/675374d1e9daa85acaf0f646)
+- Login and registration (WOW)
+- The password is hashed
+- basic failsafes for multiple logins and such
+- message history
 
+Broken promises:
+
+- ~~Multiple channels~~
