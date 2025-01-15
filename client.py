@@ -111,9 +111,7 @@ class ChatClient:
         self.port = int(port)
         
         try:
-            self.socket.settimeout(6)
             self.socket.connect((self.host, self.port))
-            self.socket.settimeout(None)
             # Start listening for messages
             self.listener_thread = threading.Thread(target=self.listen_for_messages)
             self.listener_thread.daemon = True
